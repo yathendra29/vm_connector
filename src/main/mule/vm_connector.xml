@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="db76877d-9de6-466a-a67c-f630f0aa36c0" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<vm:config name="VM_Config" doc:name="VM Config" doc:id="2852cb07-2589-479c-96f8-2d53eb86fdc9" >
+		<vm:queues >
+			<vm:queue queueName="firstQ" queueType="PERSISTENT" />
+		</vm:queues>
+	</vm:config>
+	<flow name="vm_connectorFlow" doc:id="382a0308-3da9-47c8-8483-797977ddba92" >
+		<http:listener doc:name="Listener" doc:id="265fdfd5-04a5-492d-9665-62244e57e6c4" config-ref="HTTP_Listener_config" path="/vm"/>
+		<ee:transform doc:name="input_payload" doc:id="bc480cf7-1781-4e1e-880d-285da7b3ffda" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"name":"yathendra"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<vm:publish queueName="firstQ" doc:name="Publish" doc:id="a11dd230-a424-4484-8d8b-c520b8af39e6" config-ref="VM_Config"/>
+		<ee:transform doc:name="Transform Message" doc:id="58452bba-d108-44b6-af6c-a767522ecd4a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+	"succesfully published"
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="instead_of_VM_Listner_use_scheduler_and_maintain_frequency(5s)_startDelay(10s)_to_avoid_vmRace" doc:id="3a87dd6d-7415-438e-b6a5-2c4240b87ea6" >
+		<vm:consume queueName="firstQ" doc:name="Consume" doc:id="83c43887-daac-4ab6-a396-cb262699d5c3" config-ref="VM_Config"/>
+		<logger level="INFO" doc:name="Logger" doc:id="7be6acb1-4a3e-4b78-8743-6e8891696e9c" message="#[payload]"/>
+	</flow>
+</mule>
